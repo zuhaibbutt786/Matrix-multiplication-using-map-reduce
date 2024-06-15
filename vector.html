@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Multiplication Mapreduce Animation</title>
+	<h2>Animation by zuhaib hussain</h2>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+        .matrix {
+            display: grid;
+            grid-template-columns: repeat(2, 50px);
+            grid-gap: 10px;
+            margin: 20px;
+        }
+        .matrix div {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #000;
+        }
+        .step {
+            margin: 10px 0;
+            text-align: center;
+        }
+        .animation-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .pairs {
+            display: flex;
+            justify-content: space-around;
+            width: 80%;
+            margin: 20px 0;
+            visibility: hidden;
+        }
+        .pair-box {
+            border: 1px solid #000;
+            padding: 10px;
+            margin: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .highlight {
+            background-color: yellow;
+        }
+        .explanation {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+        .operation {
+            font-size: 20px;
+            color: #000;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Matrix Multiplication using MapReduce</h1>
+
+    <div class="step" id="preprocessing">
+        <div>Step 1: Preprocessing</div>
+        <div class="explanation">We start with two matrices A and B. Each number in A and B is turned into a pair of data.</div>
+        <div class="matrix" id="matrixA">
+            <div>1</div><div>2</div>
+            <div>3</div><div>4</div>
+        </div>
+        <div class="matrix" id="matrixB">
+            <div>5</div><div>6</div>
+            <div>7</div><div>8</div>
+        </div>
+    </div>
+
+    <div class="step" id="mapping">
+        <div>Step 2: Mapping</div>
+        <div class="explanation">For each number in A and B, we create pairs. This prepares the numbers for the shuffle step.</div>
+        <div class="pairs" id="mapPairs"></div>
+    </div>
+
+    <div class="step" id="shuffling">
+        <div>Step 3: Shuffling</div>
+        <div class="explanation">This step groups the data pairs so that all pairs needed to calculate a single number in matrix C are together.</div>
+        <div class="pairs" id="shufflePairs"></div>
+    </div>
+
+    <div class="step" id="reducing">
+        <div>Step 4: Reducing</div>
+        <div class="explanation">We take each group of pairs and do the actual multiplication and adding to get each number in matrix C.</div>
+        <div class="pairs" id="reducePairs"></div>
+    </div>
+
+    <div class="step" id="finalMatrix">
+        <div>Final Matrix C</div>
+        <div class="matrix" id="matrixC">
+            <div>19</div><div>22</div>
+            <div>43</div><div>50</div>
+        </div>
+    </div>
+
+    <script>
+        const matrixA = [
+            [1, 2],
+            [3, 4]
+        ];
+        const matrixB = [
+            [5, 6],
+            [7, 8]
+        ];
+
+        const mapPairs = [
+            { key: [1, 1], value: [1, 5] },
+            { key: [1, 1], value: [2, 7] },
+            { key: [1, 2], value: [1, 6] },
+            { key: [1, 2], value: [2, 8] },
+            { key: [2, 1], value: [3, 5] },
+            { key: [2, 1], value: [4, 7] },
+            { key: [2, 2], value: [3, 6] },
+            { key: [2, 2], value: [4, 8] }
+        ];
+
+        const shufflePairs = [
+            { key: [1, 1], value: [1, 2, 5, 7] },
+            { key: [1, 2], value: [1, 2, 6, 8] },
+            { key: [2, 1], value: [3, 4, 5, 7] },
+            { key: [2, 2], value: [3, 4, 6, 8] }
+        ];
+
+        const reducePairs = [
+            { key: [1, 1], value: 19 },
+            { key: [1, 2], value: 22 },
+            { key: [2, 1], value: 43 },
+            { key: [2, 2], value: 50 }
+        ];
+
+        function createPairs(pairs, containerId) {
+            const container = document.getElementById(containerId);
+            pairs.forEach(pair => {
+                const pairBox = document.createElement('div');
+                pairBox.classList.add('pair-box');
+                pairBox.innerHTML = `(${pair.key.join(', ')}) => ${pair.value.join ? pair.value.join(', ') : pair.value}`;
+                container.appendChild(pairBox);
+            });
+        }
+
+        function highlightStep(stepId, duration) {
+            return new Promise(resolve => {
+                const step = document.getElementById(stepId);
+                step.classList.add('highlight');
+                setTimeout(() => {
+                    step.classList.remove('highlight');
+                    resolve();
+                }, duration);
+            });
+        }
+
+        function showPairs(containerId) {
+            const container = document.getElementById(containerId);
+            container.style.visibility = 'visible';
+        }
+
+        async function animateSteps() {
+            await highlightStep('preprocessing', 2000);
+            await highlightStep('matrixA', 2000);
+            await highlightStep('matrixB', 2000);
+
+            createPairs(mapPairs, 'mapPairs');
+            showPairs('mapPairs');
+            await highlightStep('mapping', 3000);
+
+            createPairs(shufflePairs, 'shufflePairs');
+            showPairs('shufflePairs');
+            await highlightStep('shuffling', 3000);
+
+            createPairs(reducePairs, 'reducePairs');
+            showPairs('reducePairs');
+            await highlightStep('reducing', 3000);
+            
+            await highlightStep('finalMatrix', 3000);
+        }
+
+        animateSteps();
+    </script>
+</body>
+</html>
